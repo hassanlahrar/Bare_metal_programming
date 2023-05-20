@@ -99,60 +99,43 @@ void systemClockConfig(){
 void init_Adc(){
     
     /*ADC clock must be < 14MHz; Config prescale 72MHz / 6 = 12Mhz*/
-
     RCC->CFGR |= RCC_CFGR_ADCPRE_DIV6;
-    /*init GPIOA 2e bit*/
-	
-	RCC -> APB2ENR |= (1 << 2);
 	
     /* init ADC1 9e bit*/
-	
 	RCC -> APB2ENR |= (1 << 9);
 	
     /* init PA0 mode */
 	GPIOA->CRL &= ~(0b1111 << 0);
 
-    /*ALLUMER ADC1 */
 	ADC1->CR2 |= (ADC_CR2_CONT | ADC_CR2_ADON);
 	for( unsigned int i = 0 ; i < 1000 ; i++){
 		__ASM("nop");
 	}
 	
-    /* calibration du ADC (3e bit) CAL*/
 	ADC1->CR2 |= ( 1 << 2);
 	
 	while(ADC1->CR2 & ( 1 << 2) ){}
 		
-    /* configurer la sequence */
-		//SQR1 -> longeur
 		ADC1->SQR1 &= ~(0xF << 20);
-    /*sQR3 -> quel canal */
 		ADC1->SQR3 &= ~(0b0000 <<0);
 		
-    /* sampling time channel 0 -> 0 to 28.5 cycles */
         ADC1->SMPR2 = ADC_SMPR2_SMP0_1;
 }
 
 void init_Timer(void){
-    /*Activer le clock pour TIM2*/
     RCC->APB1ENR &= 0 << 0;
      RCC->APB1ENR |= 1 << 0;
 
-    /*Choisir le prescaler*/
-    TIM2->PSC = 59999; /*diviser la frequence source par 36000*/
+    TIM2->PSC = 59999; 
 
-    /*Choisir la valeur de compteur*/
-    TIM2->ARR = 1199; /*interruption tous les 1000ms*/
+    TIM2->ARR = 1199; 
 
-    /*mise a jour des valeurs psc, arr */
     TIM2->EGR |= 1;
 
-    /*Activer les interruptions*/
     TIM2->DIER |= 1;
 
     NVIC_EnableIRQ(TIM2_IRQn);
 
-    /*start le timer*/
     TIM2->CR1 |= 1;
 }
 
@@ -162,7 +145,7 @@ void TIM2_IRQHandler(void){
     TIM2->SR &= ~1;
     uint16_t raw = adc_read();
     T=1/((1/T0) + (1/B)*log((R0/RT0)*((4096.0/raw)-1))) - 273.15;
-    sprintf(buffer, "tempe: %2.1f\r\n", T0);
+    sprintf(buffer, "temperature est: %2.1f\r\n", T0);
     send_to_usart1_string(buffer);
     GPIOA->ODR ^= (1 << 5); //blink led to check that data is transmitted
     
